@@ -1,0 +1,125 @@
+{
+	"name": "Notebook 1",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "IliaSparkPool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "13b4ea90-452c-4756-ba1c-a762d7c0c684"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/23b183d5-a30f-46b8-b418-ad060fb67787/resourceGroups/ilia-rg/providers/Microsoft.Synapse/workspaces/ilzu-synapse-fall25/bigDataPools/IliaSparkPool",
+				"name": "IliaSparkPool",
+				"type": "Spark",
+				"endpoint": "https://ilzu-synapse-fall25.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/IliaSparkPool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net"
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"automaticScaleJobs": false
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"import requests\n",
+					"import json\n",
+					"import pandas as pd\n",
+					"\n",
+					"url = \"https://api.spacexdata.com/v3/launches\"\n",
+					"headers = {\n",
+					"    \"Content-Type\": \"application/json\"\n",
+					"}\n",
+					"\n",
+					"response = requests.get(url)\n",
+					"data = response.json()"
+				],
+				"execution_count": 69
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"data"
+				],
+				"execution_count": 70
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_pandas = pd.json_normalize(\n",
+					"    data,  # your list of dicts\n",
+					"    meta=[\n",
+					"        'flight_number',\n",
+					"        'mission_name',\n",
+					"        'launch_year',\n",
+					"        'launch_date_utc',\n",
+					"        'launch_success',\n",
+					"        ['rocket', 'rocket_id'],\n",
+					"        ['rocket', 'rocket_name'],\n",
+					"        ['rocket', 'rocket_type'],\n",
+					"        ['launch_site', 'site_name'],\n",
+					"        ['launch_failure_details', 'reason']\n",
+					"    ],\n",
+					"    record_path=['rocket', 'second_stage', 'payloads'],  # nested array to flatten\n",
+					"    errors='ignore'\n",
+					")"
+				],
+				"execution_count": 75
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_pandas.columns = [col.replace('.', '_').replace('[', '').replace(']', '') for col in df_pandas.columns]"
+				],
+				"execution_count": 76
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_spark = spark.createDataFrame(df_pandas)\n",
+					""
+				],
+				"execution_count": 79
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"collapsed": false
+				},
+				"source": [
+					"display(df_spark)"
+				],
+				"execution_count": 80
+			}
+		]
+	}
+}
